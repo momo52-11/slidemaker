@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SlideMaker – FIX</title>
+  <style>
+    :root{
+      --bg:#0f1220; --text:#e9ecff; --muted:rgba(233,236,255,.72);
+      --border:rgba(255,255,255,.10); --accent:#7cf5ff; --danger:#ff4d6d;
+      --shadow: 0 14px 40px rgba(0,0,0,.35); --r:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 800px at 20% 10%, #1a2350 0%, var(--bg) 55%); color:var(--text); font-family:system-ui,Segoe UI,Arial}
+    header{position:sticky;top:0;z-index:10;background:rgba(15,18,32,.72);backdrop-filter: blur(10px);border-bottom:1px solid var(--border)}
+    .top{max-width:1200px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:10px}
+    .dot{width:12px;height:12px;border-radius:999px;background:var(--accent);box-shadow:0 0 18px rgba(124,245,255,.55)}
+    h1{font-size:16px;margin:0}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    button{
+      cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.05);
+      color:var(--text);padding:10px 12px;border-radius:12px;transition:transform .05s, background .15s;
+    }
+    button:hover{background:rgba(255,255,255,.08)}
+    button:active{transform:translateY(1px)}
+    .primary{border-color:rgba(124,245,255,.35);background:rgba(124,245,255,.10)}
+    .danger{border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.10)}
+    main{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+    .panelHead{padding:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .panelHead small{color:var(--muted)}
+    .list{padding:10px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 170px);overflow:auto}
+    .card{border:1px solid var(--border);border-radius:14px;background:rgba(0,0,0,.15);padding:10px;display:flex;gap:10px;align-items:center}
+    .thumb{width:74px;height:46px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg, rgba(124,245,255,.18), rgba(255,77,109,.10));border:1px solid rgba(255,255,255,.10);display:grid;place-items:center;color:rgba(255,255,255,.6);font-size:12px;flex:0 0 auto}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .meta{flex:1}
+    .meta b{display:block;font-size:13px;line-height:1.2}
+    .meta span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+    .selected{outline:2px solid rgba(124,245,255,.55)}
+    .editor{padding:14px}
+    label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+    input[type="text"], textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.18);color:var(--text);outline:none}
+    textarea{min-height:120px;resize:vertical}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row{display:flex;gap:8px}
+    .mini{padding:8px 10px;border-radius:10px;font-size:12px}
+    .previewWrap{padding:14px}
+    .stage{aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;background:linear-gradient(135deg, #11183a, #070914)}
+    .slide{position:absolute;inset:0;padding:40px;display:grid;align-content:center;gap:14px}
+    .slide h2{margin:0;font-size:40px}
+    .slide p{margin:0;font-size:18px;color:var(--muted);line-height:1.5;max-width:80ch;white-space:pre-wrap}
+    .slideImg{position:absolute;inset:auto 34px 34px auto;width:260px;height:160px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 48px rgba(0,0,0,.35);background:rgba(255,255,255,.06)}
+    .slideImg img{width:100%;height:100%;object-fit:cover;display:block}
+    .pill{position:absolute;top:16px;right:16px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.20);color:rgba(233,236,255,.80);font-size:12px}
+
+    /* Presentation */
+    .present{position:fixed;inset:0;z-index:9999;background:#000;display:none}
+    .present.show{display:block}
+    .present canvas{width:100vw;height:100vh;display:block}
+    .presentHud{position:fixed;left:16px;bottom:16px;z-index:10000;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:14px;color:rgba(255,255,255,.88);font-size:13px}
+    .presentHud b{color:#fff}
+    .presentHint{opacity:.8;margin-top:4px;font-size:12px}
+
+    /* Debug bar */
+    #debug{position:fixed;right:12px;bottom:12px;z-index:50;
+      max-width:min(520px,calc(100vw - 24px));
+      padding:10px 12px;border-radius:14px;
+      background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);
+      color:rgba(255,255,255,.9);font-size:12px;display:none;white-space:pre-wrap}
+    @media (max-width: 980px){ main{grid-template-columns:1fr} .list{max-height:unset} }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <h1>SlideMaker</h1>
+        <div style="font-size:12px;color:var(--muted)">FIX : Ajout + Présentation</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="addSlideBtn" type="button">+ Ajouter une slide</button>
+      <button id="presentBtn" type="button">▶ Présenter</button>
+      <button id="exportBtn" type="button">⬇ Exporter en HTML</button>
+      <button class="danger" id="resetBtn" type="button">Reset</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panelHead">
+      <div><b>Slides</b><br><small>Clique pour sélectionner</small></div>
+      <small id="countLbl">0</small>
+    </div>
+    <div class="list" id="slideList"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panelHead">
+      <div><b>Éditeur</b><br><small>Modifie la slide sélectionnée</small></div>
+      <small id="selLbl">—</small>
+    </div>
+
+    <div class="editor">
+      <label>Titre</label>
+      <input type="text" id="titleInput" placeholder="Titre de la slide…">
+
+      <label>Texte</label>
+      <textarea id="textInput" placeholder="Ton texte…"></textarea>
+
+      <div class="grid2">
+        <div>
+          <label>Image (optionnel)</label>
+          <input type="file" id="imgInput" accept="image/*">
+        </div>
+        <div>
+          <label>Actions</label>
+          <div class="row">
+            <button class="mini" id="dupBtn" type="button">Dupliquer</button>
+            <button class="mini danger" id="delBtn" type="button">Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="previewWrap">
+      <div class="stage">
+        <div class="pill" id="pill">Slide 1 / 1</div>
+        <div class="slide">
+          <h2 id="pvTitle"></h2>
+          <p id="pvText"></p>
+          <div class="slideImg" id="pvImgWrap" style="display:none">
+            <img id="pvImg" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="present" id="present">
+  <canvas id="pCanvas"></canvas>
+  <div class="presentHud">
+    <div><b>Présentation</b> — Slide <span id="pIdx"></span>/<span id="pTotal"></span></div>
+    <div class="presentHint">← → • Échap pour quitter</div>
+  </div>
+</div>
+
+<div id="debug"></div>
+
+<script>
+(function(){
+  // --- Debug (affiche les erreurs si le script casse) ---
+  var debug = document.getElementById("debug");
+  function dbg(msg){
+    debug.style.display = "block";
+    debug.textContent = String(msg);
+  }
+  window.addEventListener("error", function(e){
+    dbg("ERREUR JS: " + e.message + "\nLigne: " + e.lineno + ":" + e.colno);
+  });
+
+  // --- DATA ---
+  var defaultSlides = [
+    { title:"Bienvenue 👋", text:"Crée ton diaporama ici.\nAjoute des slides, des images, puis présente.", img:null },
+    { title:"Astuce", text:"Tu peux sélectionner une slide à gauche.", img:null }
+  ];
+
+  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function load(){
+    try{
+      var raw = localStorage.getItem("slidemaker_fix_v1");
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function save(){
+    localStorage.setItem("slidemaker_fix_v1", JSON.stringify(slides));
+  }
+  function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
+  function slideSummary(s){
+    var t = (s.text||"").replace(/\s+/g," ").trim();
+    return t.length ? (t.slice(0,44) + (t.length>44 ? "…" : "")) : "—";
+  }
+  function fileToDataURL(file){
+    return new Promise(function(resolve,reject){
+      var r = new FileReader();
+      r.onload = function(){ resolve(r.result); };
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  var slides = load() || clone(defaultSlides);
+  var selected = 0;
+
+  // --- Elements ---
+  var slideList = document.getElementById("slideList");
+  var countLbl = document.getElementById("countLbl");
+  var selLbl = document.getElementById("selLbl");
+
+  var titleInput = document.getElementById("titleInput");
+  var textInput  = document.getElementById("textInput");
+  var imgInput   = document.getElementById("imgInput");
+
+  var pvTitle = document.getElementById("pvTitle");
+  var pvText  = document.getElementById("pvText");
+  var pvImgWrap = document.getElementById("pvImgWrap");
+  var pvImg = document.getElementById("pvImg");
+  var pill = document.getElementById("pill");
+
+  // Buttons
+  var addSlideBtn = document.getElementById("addSlideBtn");
+  var presentBtn  = document.getElementById("presentBtn");
+  var exportBtn   = document.getElementById("exportBtn");
+  var resetBtn    = document.getElementById("resetBtn");
+  var dupBtn      = document.getElementById("dupBtn");
+  var delBtn      = document.getElementById("delBtn");
+
+  // --- RENDER LIST ---
+  function renderList(){
+    slideList.innerHTML = "";
+    for(var i=0;i<slides.length;i++){
+      (function(idx){
+        var s = slides[idx];
+        var card = document.createElement("div");
+        card.className = "card" + (idx===selected ? " selected" : "");
+
+        card.addEventListener("click", function(){
+          selected = idx; render();
+        });
+
+        var thumb = document.createElement("div");
+        thumb.className = "thumb";
+        if(s.img){
+          var im = document.createElement("img");
+          im.src = s.img;
+          thumb.appendChild(im);
+        } else thumb.textContent = "16:9";
+
+        var meta = document.createElement("div");
+        meta.className = "meta";
+        var b = document.createElement("b");
+        b.textContent = s.title || ("Slide " + (idx+1));
+        var sp = document.createElement("span");
+        sp.textContent = slideSummary(s);
+        meta.appendChild(b);
+        meta.appendChild(sp);
+
+        card.appendChild(thumb);
+        card.appendChild(meta);
+
+        slideList.appendChild(card);
+      })(i);
+    }
+    countLbl.textContent = String(slides.length);
+  }
+
+  // --- PREVIEW ---
+  function renderPreview(){
+    var s = slides[selected];
+    pvTitle.textContent = s.title || "";
+    pvText.textContent = s.text || "";
+    if(s.img){
+      pvImgWrap.style.display = "block";
+      pvImg.src = s.img;
+    } else {
+      pvImgWrap.style.display = "none";
+      pvImg.src = "";
+    }
+    pill.textContent = "Slide " + (selected+1) + " / " + slides.length;
+  }
+
+  function render(){
+    selected = clamp(selected,0,slides.length-1);
+    renderList();
+    renderPreview();
+
+    var s = slides[selected];
+    titleInput.value = s.title || "";
+    textInput.value  = s.text || "";
+    imgInput.value = "";
+    selLbl.textContent = "#" + (selected+1);
+  }
+
+  // --- Editor bindings ---
+  titleInput.addEventListener("input", function(){
+    slides[selected].title = titleInput.value;
+    save(); renderList(); renderPreview();
+  });
+  textInput.addEventListener("input", function(){
+    slides[selected].text = textInput.value;
+    save(); renderList(); renderPreview();
+  });
+  imgInput.addEventListener("change", function(){
+    var f = imgInput.files && imgInput.files[0];
+    if(!f) return;
+    fileToDataURL(f).then(function(url){
+      slides[selected].img = url;
+      save(); renderList(); renderPreview();
+    });
+  });
+
+  // --- Actions ---
+  addSlideBtn.addEventListener("click", function(){
+    slides.push({ title:"Nouvelle slide", text:"", img:null });
+    selected = slides.length - 1;
+    save(); render();
+  });
+
+  dupBtn.addEventListener("click", function(){
+    var s = slides[selected];
+    slides.splice(selected+1, 0, { title:(s.title||"") + " (copie)", text:s.text, img:s.img });
+    selected = selected + 1;
+    save(); render();
+  });
+
+  delBtn.addEventListener("click", function(){
+    if(slides.length<=1) return;
+    slides.splice(selected, 1);
+    selected = clamp(selected,0,slides.length-1);
+    save(); render();
+  });
+
+  resetBtn.addEventListener("click", function(){
+    localStorage.removeItem("slidemaker_fix_v1");
+    slides = clone(defaultSlides);
+    selected = 0;
+    render();
+  });
+
+  // --- PRESENTATION ---
+  var present = document.getElementById("present");
+  var pCanvas = document.getElementById("pCanvas");
+  var pCtx = pCanvas.getContext("2d");
+  var pIdx = document.getElementById("pIdx");
+  var pTotal = document.getElementById("pTotal");
+
+  var pActive = false;
+  var pSel = 0;
+
+  function rr(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function wrap(ctx,text,x,y,maxW,lineH){
+    var lines = (text||"").split("\n");
+    var yy = y;
+    for(var li=0; li<lines.length; li++){
+      var words = lines[li].split(" ");
+      var line = "";
+      for(var wi=0; wi<words.length; wi++){
+        var test = line ? (line + " " + words[wi]) : words[wi];
+        if(ctx.measureText(test).width > maxW){
+          ctx.fillText(line, x, yy);
+          line = words[wi];
+          yy += lineH;
+        } else line = test;
+      }
+      if(line){ ctx.fillText(line, x, yy); yy += lineH; }
+      yy += 8;
+    }
+  }
+
+  function drawSlide(){
+    var s = slides[pSel];
+    pIdx.textContent = String(pSel+1);
+    pTotal.textContent = String(slides.length);
+
+    var W = pCanvas.width, H = pCanvas.height;
+    pCtx.clearRect(0,0,W,H);
+
+    var g = pCtx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, "#11183a");
+    g.addColorStop(1, "#070914");
+    pCtx.fillStyle = g;
+    pCtx.fillRect(0,0,W,H);
+
+    var margin = 60;
+    var maxW = W - margin*2;
+    var maxH = H - margin*2;
+    var ar = 16/9;
+
+    var w = maxW;
+    var h = w/ar;
+    if(h > maxH){ h = maxH; w = h*ar; }
+
+    var x = (W - w)/2;
+    var y = (H - h)/2;
+
+    pCtx.fillStyle = "rgba(255,255,255,0.06)";
+    rr(pCtx, x, y, w, h, 22);
+    pCtx.fill();
+
+    pCtx.fillStyle = "rgba(233,236,255,0.96)";
+    pCtx.font = "700 54px system-ui, Arial";
+    wrap(pCtx, s.title || "", x+46, y+86, w-92, 60);
+
+    pCtx.fillStyle = "rgba(233,236,255,0.75)";
+    pCtx.font = "400 26px system-ui, Arial";
+    wrap(pCtx, s.text || "", x+46, y+170, w-92, 34);
+
+    pCtx.fillStyle = "rgba(255,255,255,0.35)";
+    pCtx.font = "500 18px system-ui, Arial";
+    pCtx.fillText("Slide " + (pSel+1) + "/" + slides.length, x+46, y+h-24);
+
+    if(s.img){
+      var img = new Image();
+      img.onload = function(){
+        var iw = Math.min(420, w*0.34);
+        var ih = iw*(9/16);
+        var ix = x + w - iw - 46;
+        var iy = y + h - ih - 46;
+
+        pCtx.save();
+        rr(pCtx, ix, iy, iw, ih, 16);
+        pCtx.clip();
+        pCtx.drawImage(img, ix, iy, iw, ih);
+        pCtx.restore();
+      };
+      img.src = s.img;
+    }
+  }
+
+  function resizePresentation(){
+    pCanvas.width = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+    drawSlide();
+  }
+
+  function enterPresentation(){
+    pActive = true;
+    pSel = selected;
+    present.classList.add("show");
+    resizePresentation();
+
+    // tente fullscreen (si autorisé)
+    try{
+      if(present.requestFullscreen) present.requestFullscreen();
+    }catch(e){}
+  }
+
+  function exitPresentation(){
+    pActive = false;
+    present.classList.remove("show");
+    try{
+      if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+    }catch(e){}
+  }
+
+  presentBtn.addEventListener("click", function(){
+    enterPresentation();
+  });
+
+  window.addEventListener("keydown", function(e){
+    if(!pActive) return;
+    if(e.code === "Escape"){ exitPresentation(); return; }
+    if(e.code === "ArrowRight" || e.code === "KeyD"){
+      pSel = clamp(pSel+1, 0, slides.length-1);
+      drawSlide();
+    }
+    if(e.code === "ArrowLeft" || e.code === "KeyA"){
+      pSel = clamp(pSel-1, 0, slides.length-1);
+      drawSlide();
+    }
+  });
+
+  window.addEventListener("resize", function(){
+    if(pActive) resizePresentation();
+  });
+
+  // --- EXPORT minimal (juste pour éviter de casser) ---
+  function exportHTML(){
+    alert("Export: je peux l’ajouter ensuite, là on a FIX les slides + présentation.");
+  }
+  exportBtn.addEventListener("click", exportHTML);
+
+  // Init
+  render();
+
+  // Petit test pour confirmer que les boutons marchent
+  // (tu peux laisser)
+  dbg("OK: JS chargé. Si tu vois ce message, les boutons doivent fonctionner.");
+})();
+</script>
+
+</body>
+</html>
