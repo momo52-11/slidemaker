@@ -3,496 +3,921 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SlideMaker – FIX</title>
+  <title>SlideMaker</title>
   <style>
     :root{
-      --bg:#0f1220; --text:#e9ecff; --muted:rgba(233,236,255,.72);
-      --border:rgba(255,255,255,.10); --accent:#7cf5ff; --danger:#ff4d6d;
-      --shadow: 0 14px 40px rgba(0,0,0,.35); --r:16px;
+      --bg1:#0b1630; --bg2:#122a55;
+      --stroke:rgba(255,255,255,.12);
+      --stroke2:rgba(255,255,255,.22);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+      --accent:#4aa3ff;
+      --danger:#ff5d5d;
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --radius:18px;
+      --slideW:960px;
+      --slideH:540px;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(1200px 800px at 20% 10%, #1a2350 0%, var(--bg) 55%); color:var(--text); font-family:system-ui,Segoe UI,Arial}
-    header{position:sticky;top:0;z-index:10;background:rgba(15,18,32,.72);backdrop-filter: blur(10px);border-bottom:1px solid var(--border)}
-    .top{max-width:1200px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between}
-    .brand{display:flex;align-items:center;gap:10px}
-    .dot{width:12px;height:12px;border-radius:999px;background:var(--accent);box-shadow:0 0 18px rgba(124,245,255,.55)}
-    h1{font-size:16px;margin:0}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-    button{
-      cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.05);
-      color:var(--text);padding:10px 12px;border-radius:12px;transition:transform .05s, background .15s;
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background: radial-gradient(1100px 700px at 20% 10%, rgba(74,163,255,.18), transparent 60%),
+                  radial-gradient(900px 600px at 80% 30%, rgba(120,78,255,.15), transparent 60%),
+                  linear-gradient(180deg,var(--bg1),var(--bg2));
+      overflow:hidden;
     }
-    button:hover{background:rgba(255,255,255,.08)}
-    button:active{transform:translateY(1px)}
-    .primary{border-color:rgba(124,245,255,.35);background:rgba(124,245,255,.10)}
-    .danger{border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.10)}
-    main{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:360px 1fr;gap:16px}
-    .panel{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
-    .panelHead{padding:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-    .panelHead small{color:var(--muted)}
-    .list{padding:10px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 170px);overflow:auto}
-    .card{border:1px solid var(--border);border-radius:14px;background:rgba(0,0,0,.15);padding:10px;display:flex;gap:10px;align-items:center}
-    .thumb{width:74px;height:46px;border-radius:10px;overflow:hidden;background:linear-gradient(135deg, rgba(124,245,255,.18), rgba(255,77,109,.10));border:1px solid rgba(255,255,255,.10);display:grid;place-items:center;color:rgba(255,255,255,.6);font-size:12px;flex:0 0 auto}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .meta{flex:1}
-    .meta b{display:block;font-size:13px;line-height:1.2}
-    .meta span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
-    .selected{outline:2px solid rgba(124,245,255,.55)}
-    .editor{padding:14px}
-    label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
-    input[type="text"], textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.18);color:var(--text);outline:none}
-    textarea{min-height:120px;resize:vertical}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .row{display:flex;gap:8px}
-    .mini{padding:8px 10px;border-radius:10px;font-size:12px}
-    .previewWrap{padding:14px}
-    .stage{aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(255,255,255,.12);overflow:hidden;position:relative;background:linear-gradient(135deg, #11183a, #070914)}
-    .slide{position:absolute;inset:0;padding:40px;display:grid;align-content:center;gap:14px}
-    .slide h2{margin:0;font-size:40px}
-    .slide p{margin:0;font-size:18px;color:var(--muted);line-height:1.5;max-width:80ch;white-space:pre-wrap}
-    .slideImg{position:absolute;inset:auto 34px 34px auto;width:260px;height:160px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 48px rgba(0,0,0,.35);background:rgba(255,255,255,.06)}
-    .slideImg img{width:100%;height:100%;object-fit:cover;display:block}
-    .pill{position:absolute;top:16px;right:16px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.20);color:rgba(233,236,255,.80);font-size:12px}
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-columns: 290px 1fr;
+      gap:18px;
+      padding:18px;
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
 
-    /* Presentation */
-    .present{position:fixed;inset:0;z-index:9999;background:#000;display:none}
-    .present.show{display:block}
-    .present canvas{width:100vw;height:100vh;display:block}
-    .presentHud{position:fixed;left:16px;bottom:16px;z-index:10000;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:14px;color:rgba(255,255,255,.88);font-size:13px}
-    .presentHud b{color:#fff}
-    .presentHint{opacity:.8;margin-top:4px;font-size:12px}
+    /* Sidebar */
+    .sidebar{ display:flex; flex-direction:column; min-height:0; }
+    .brand{
+      padding:14px 14px 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,.18), transparent);
+      border-bottom:1px solid var(--stroke);
+    }
+    .brand h1{ margin:0; font-size:20px; display:flex; align-items:center; gap:10px; }
+    .brand .dot{
+      width:30px;height:30px;border-radius:10px;
+      background: linear-gradient(135deg, rgba(74,163,255,.95), rgba(120,78,255,.85));
+      display:grid;place-items:center;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      font-weight:800;
+    }
+    .brand p{ margin:6px 0 0; font-size:12.5px; color:var(--muted); line-height:1.25; }
 
-    /* Debug bar */
-    #debug{position:fixed;right:12px;bottom:12px;z-index:50;
-      max-width:min(520px,calc(100vw - 24px));
-      padding:10px 12px;border-radius:14px;
-      background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);
-      color:rgba(255,255,255,.9);font-size:12px;display:none;white-space:pre-wrap}
-    @media (max-width: 980px){ main{grid-template-columns:1fr} .list{max-height:unset} }
+    .sideActions{ padding:12px; display:grid; gap:8px; }
+    .sideActions .row{ display:grid; gap:8px; grid-template-columns: 1fr 1fr; }
+
+    .btn{
+      appearance:none;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 10px;
+      border-radius:14px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,.18);
+      user-select:none;
+      display:flex; align-items:center; justify-content:center;
+      gap:8px;
+    }
+    .btn:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.20); }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn.primary{ background: rgba(74,163,255,.18); border-color: rgba(74,163,255,.35); }
+    .btn.primary:hover{ background: rgba(74,163,255,.25); }
+    .btn.danger{ background: rgba(255,93,93,.15); border-color: rgba(255,93,93,.35); }
+    .btn.danger:hover{ background: rgba(255,93,93,.22); }
+    .btn.small{ padding:8px 8px; border-radius:12px; font-weight:800; }
+
+    .status{
+      padding:0 12px 12px;
+      display:flex; gap:10px; align-items:center;
+      color:var(--muted); font-size:12.5px;
+    }
+    .pill{
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.18);
+      display:inline-flex; gap:8px; align-items:center;
+    }
+    .okDot{ width:10px; height:10px; border-radius:50%; background:#45d37c; box-shadow:0 0 0 3px rgba(69,211,124,.15); }
+
+    .controls{ padding:10px 12px 12px; border-top:1px solid var(--stroke); display:grid; gap:10px; }
+    label{ font-size:12px; color:var(--muted); }
+    select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.18);
+      color:var(--text);
+      outline:none;
+      cursor:pointer;
+    }
+
+    .slides{
+      padding:12px;
+      display:flex; flex-direction:column; gap:10px;
+      min-height:0; overflow:auto;
+      border-top:1px solid var(--stroke);
+    }
+    .slideItem{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:12px; border-radius:14px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      cursor:pointer; user-select:none;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .slideItem:hover{ background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.20); }
+    .slideItem.active{ background: rgba(74,163,255,.16); border-color: rgba(74,163,255,.35); }
+    .slideItem .name{ font-weight:800; }
+    .slideItem .meta{ color:var(--muted); font-size:12px; }
+
+    .tips{
+      padding:12px;
+      border-top:1px solid var(--stroke);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .tips b{ color:var(--text); }
+
+    /* Main */
+    .main{ display:flex; flex-direction:column; min-height:0; gap:12px; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px;
+      border-bottom:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(0,0,0,.18), transparent);
+    }
+    .topbar .left,.topbar .right{ display:flex; gap:10px; align-items:center; }
+
+    .stageWrap{ flex:1; min-height:0; padding:14px; display:grid; place-items:center; }
+    .stageFrame{
+      width:min(100%, calc(var(--slideW) + 36px));
+      aspect-ratio: 16 / 9;
+      padding:18px;
+      border-radius: 22px;
+      border:1px solid var(--stroke2);
+      background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10));
+      box-shadow: 0 18px 40px rgba(0,0,0,.40);
+      display:grid; place-items:center;
+    }
+    .stage{
+      width:100%; height:100%;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.14);
+      position:relative; overflow:hidden;
+      touch-action:none; user-select:none;
+    }
+    .stage::before{
+      content:"";
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity:.18;
+      pointer-events:none;
+    }
+
+    /* Elements (editor) */
+    .el{ position:absolute; border-radius:12px; overflow:visible; }
+    .el.selected{ outline:2px solid rgba(74,163,255,.85); outline-offset:2px; }
+    .el .inner{ width:100%; height:100%; border-radius:12px; overflow:hidden; }
+    .el.text .inner{
+      padding:10px 12px;
+      background: rgba(0,0,0,.20);
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--text);
+      white-space:pre-wrap; word-break:break-word; line-height:1.15;
+    }
+    .el.image .inner{
+      background: rgba(0,0,0,.12);
+      border:1px solid rgba(255,255,255,.12);
+      display:grid; place-items:center;
+    }
+    .el.image img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .handle{
+      position:absolute;
+      width:12px; height:12px;
+      border-radius:4px;
+      background: rgba(255,255,255,.85);
+      border:1px solid rgba(0,0,0,.35);
+      right:-6px; bottom:-6px;
+      cursor:nwse-resize;
+      display:none;
+    }
+    .el.selected .handle{ display:block; }
+
+    /* Presentation overlay (bigger) */
+    .present{
+      position:fixed; inset:0;
+      background:
+        radial-gradient(1100px 700px at 20% 10%, rgba(74,163,255,.16), transparent 60%),
+        radial-gradient(900px 600px at 80% 30%, rgba(120,78,255,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:none;
+      z-index:9999;
+      padding:12px; /* smaller padding => bigger stage */
+    }
+    .present.on{ display:grid; place-items:center; }
+    .presentFrame{
+      width:min(1400px, 98vw); /* bigger */
+      aspect-ratio: 16 / 9;
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.18);
+      background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10));
+      box-shadow: 0 22px 60px rgba(0,0,0,.55);
+      padding:14px; /* smaller */
+      position:relative;
+      overflow:hidden;
+    }
+    .presentStage{
+      width:100%; height:100%;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.14);
+      position:relative; overflow:hidden;
+      cursor:pointer;
+      touch-action:manipulation;
+      user-select:none;
+    }
+
+    /* Presentation elements (no ugly boxes) */
+    .pEl{ position:absolute; border-radius:12px; overflow:hidden; }
+    .pText{
+      width:100%; height:100%;
+      background:transparent; border:none;
+      color:var(--text);
+      white-space:pre-wrap; word-break:break-word; line-height:1.15;
+      text-shadow: 0 2px 10px rgba(0,0,0,.25);
+    }
+    .pImg img{ width:100%; height:100%; object-fit:cover; display:block; border-radius:12px; }
+
+    .hud{
+      position:absolute;
+      right:14px; bottom:12px;
+      display:flex; gap:10px; align-items:center;
+      color: rgba(255,255,255,.78);
+      font-size:11px;
+      user-select:none;
+    }
+    .hud .miniBtn{
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.82);
+      padding:6px 9px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:11px;
+    }
+    .hud .miniBtn:hover{ background: rgba(0,0,0,.30); }
+
+    /* Transitions */
+    .t-fade{ animation: fadeIn .25s ease both; }
+    .t-slide{ animation: slideIn .28s ease both; }
+    .t-zoom{ animation: zoomIn .25s ease both; }
+    @keyframes fadeIn{ from{ opacity:0 } to{ opacity:1 } }
+    @keyframes slideIn{ from{ transform: translateX(18px); opacity:.65 } to{ transform: translateX(0); opacity:1 } }
+    @keyframes zoomIn{ from{ transform: scale(.985); opacity:.65 } to{ transform: scale(1); opacity:1 } }
+
+    @media (max-width: 900px){
+      .app{ grid-template-columns: 1fr; }
+      .sidebar{ order:2; }
+      .main{ order:1; }
+    }
   </style>
 </head>
 <body>
-
-<header>
-  <div class="top">
-    <div class="brand">
-      <div class="dot"></div>
-      <div>
-        <h1>SlideMaker</h1>
-        <div style="font-size:12px;color:var(--muted)">FIX : Ajout + Présentation</div>
+  <div class="app">
+    <aside class="sidebar card">
+      <div class="brand">
+        <h1><span class="dot">S</span> SlideMaker</h1>
+        <p>Ajoute du texte / images, puis déplace-les sur la slide.</p>
       </div>
-    </div>
-    <div class="actions">
-      <button class="primary" id="addSlideBtn" type="button">+ Ajouter une slide</button>
-      <button id="presentBtn" type="button">▶ Présenter</button>
-      <button id="exportBtn" type="button">⬇ Exporter en HTML</button>
-      <button class="danger" id="resetBtn" type="button">Reset</button>
-    </div>
-  </div>
-</header>
 
-<main>
-  <section class="panel">
-    <div class="panelHead">
-      <div><b>Slides</b><br><small>Clique pour sélectionner</small></div>
-      <small id="countLbl">0</small>
-    </div>
-    <div class="list" id="slideList"></div>
-  </section>
+      <div class="sideActions">
+        <div class="row">
+          <button class="btn primary" id="btnAddSlide">+ Slide</button>
+          <button class="btn" id="btnDupSlide">Dupliquer</button>
+        </div>
+        <div class="row">
+          <button class="btn danger" id="btnDelSlide">Supprimer</button>
+          <button class="btn" id="btnSave">Sauvegarder</button>
+        </div>
+      </div>
 
-  <section class="panel">
-    <div class="panelHead">
-      <div><b>Éditeur</b><br><small>Modifie la slide sélectionnée</small></div>
-      <small id="selLbl">—</small>
-    </div>
+      <div class="status">
+        <span class="pill"><span class="okDot" id="saveDot" style="display:none;"></span><span id="saveText">Non sauvegardé</span></span>
+      </div>
 
-    <div class="editor">
-      <label>Titre</label>
-      <input type="text" id="titleInput" placeholder="Titre de la slide…">
-
-      <label>Texte</label>
-      <textarea id="textInput" placeholder="Ton texte…"></textarea>
-
-      <div class="grid2">
+      <div class="controls">
         <div>
-          <label>Image (optionnel)</label>
-          <input type="file" id="imgInput" accept="image/*">
+          <label for="themeSelect">Fond / Thème</label>
+          <select id="themeSelect">
+            <option value="ocean">Ocean (bleu)</option>
+            <option value="midnight">Midnight (sombre)</option>
+            <option value="sunset">Sunset (violet/rose)</option>
+            <option value="paper">Paper (clair)</option>
+          </select>
         </div>
         <div>
-          <label>Actions</label>
-          <div class="row">
-            <button class="mini" id="dupBtn" type="button">Dupliquer</button>
-            <button class="mini danger" id="delBtn" type="button">Supprimer</button>
-          </div>
+          <label for="transitionSelect">Transition</label>
+          <select id="transitionSelect">
+            <option value="none">Aucune</option>
+            <option value="fade">Fondu</option>
+            <option value="slide">Glissé</option>
+            <option value="zoom">Zoom</option>
+          </select>
         </div>
       </div>
-    </div>
 
-    <div class="previewWrap">
-      <div class="stage">
-        <div class="pill" id="pill">Slide 1 / 1</div>
-        <div class="slide">
-          <h2 id="pvTitle"></h2>
-          <p id="pvText"></p>
-          <div class="slideImg" id="pvImgWrap" style="display:none">
-            <img id="pvImg" alt="">
-          </div>
+      <div class="slides" id="slidesList"></div>
+
+      <div class="tips">
+        <b>Astuces :</b><br>
+        • Clique un objet pour le sélectionner<br>
+        • Glisse pour déplacer<br>
+        • Tire le petit carré pour redimensionner<br>
+        • <b>Suppr</b> supprime l’objet sélectionné
+      </div>
+    </aside>
+
+    <main class="main card">
+      <div class="topbar">
+        <div class="left">
+          <button class="btn primary" id="addText">+ Texte</button>
+          <button class="btn primary" id="addImg">+ Image</button>
+          <button class="btn small" id="textPlus">A+</button>
+          <button class="btn small" id="textMinus">A−</button>
+        </div>
+        <div class="right">
+          <button class="btn" id="btnPresent">Présentation</button>
         </div>
       </div>
-    </div>
-  </section>
-</main>
 
-<div class="present" id="present">
-  <canvas id="pCanvas"></canvas>
-  <div class="presentHud">
-    <div><b>Présentation</b> — Slide <span id="pIdx"></span>/<span id="pTotal"></span></div>
-    <div class="presentHint">← → • Échap pour quitter</div>
+      <div class="stageWrap">
+        <div class="stageFrame">
+          <div class="stage" id="stage"></div>
+        </div>
+      </div>
+    </main>
   </div>
-</div>
 
-<div id="debug"></div>
+  <div class="present" id="presentOverlay">
+    <div class="presentFrame">
+      <div class="presentStage" id="presentStage" title="Clique / Tape pour avancer"></div>
+      <div class="hud">
+        <button class="miniBtn" id="btnExitPresent">Quitter</button>
+        <div id="hudCounter">1/1</div>
+      </div>
+    </div>
+  </div>
 
-<script>
-(function(){
-  // --- Debug (affiche les erreurs si le script casse) ---
-  var debug = document.getElementById("debug");
-  function dbg(msg){
-    debug.style.display = "block";
-    debug.textContent = String(msg);
-  }
-  window.addEventListener("error", function(e){
-    dbg("ERREUR JS: " + e.message + "\nLigne: " + e.lineno + ":" + e.colno);
-  });
+  <input type="file" id="imgPicker" accept="image/*" hidden />
 
-  // --- DATA ---
-  var defaultSlides = [
-    { title:"Bienvenue 👋", text:"Crée ton diaporama ici.\nAjoute des slides, des images, puis présente.", img:null },
-    { title:"Astuce", text:"Tu peux sélectionner une slide à gauche.", img:null }
-  ];
+  <script>
+  (() => {
+    /* =========================================================
+       IMPORTANT FIX:
+       On stocke TOUTES les coordonnées dans un repère FIXE 960x540
+       Puis on "scale" dans l'éditeur ET en présentation.
+       => plus aucun décalage.
+       ========================================================= */
+    const BASE_W = 960;
+    const BASE_H = 540;
 
-  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
-  function load(){
-    try{
-      var raw = localStorage.getItem("slidemaker_fix_v1");
-      return raw ? JSON.parse(raw) : null;
-    }catch(e){ return null; }
-  }
-  function save(){
-    localStorage.setItem("slidemaker_fix_v1", JSON.stringify(slides));
-  }
-  function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
-  function slideSummary(s){
-    var t = (s.text||"").replace(/\s+/g," ").trim();
-    return t.length ? (t.slice(0,44) + (t.length>44 ? "…" : "")) : "—";
-  }
-  function fileToDataURL(file){
-    return new Promise(function(resolve,reject){
-      var r = new FileReader();
-      r.onload = function(){ resolve(r.result); };
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
+    const LS_KEY = "slidemaker_v4_fixedCoords";
 
-  var slides = load() || clone(defaultSlides);
-  var selected = 0;
+    const stage = document.getElementById("stage");
+    const slidesList = document.getElementById("slidesList");
+    const saveDot = document.getElementById("saveDot");
+    const saveText = document.getElementById("saveText");
 
-  // --- Elements ---
-  var slideList = document.getElementById("slideList");
-  var countLbl = document.getElementById("countLbl");
-  var selLbl = document.getElementById("selLbl");
+    const themeSelect = document.getElementById("themeSelect");
+    const transitionSelect = document.getElementById("transitionSelect");
 
-  var titleInput = document.getElementById("titleInput");
-  var textInput  = document.getElementById("textInput");
-  var imgInput   = document.getElementById("imgInput");
+    const presentOverlay = document.getElementById("presentOverlay");
+    const presentStage = document.getElementById("presentStage");
+    const hudCounter = document.getElementById("hudCounter");
+    const btnExitPresent = document.getElementById("btnExitPresent");
 
-  var pvTitle = document.getElementById("pvTitle");
-  var pvText  = document.getElementById("pvText");
-  var pvImgWrap = document.getElementById("pvImgWrap");
-  var pvImg = document.getElementById("pvImg");
-  var pill = document.getElementById("pill");
+    const imgPicker = document.getElementById("imgPicker");
 
-  // Buttons
-  var addSlideBtn = document.getElementById("addSlideBtn");
-  var presentBtn  = document.getElementById("presentBtn");
-  var exportBtn   = document.getElementById("exportBtn");
-  var resetBtn    = document.getElementById("resetBtn");
-  var dupBtn      = document.getElementById("dupBtn");
-  var delBtn      = document.getElementById("delBtn");
-
-  // --- RENDER LIST ---
-  function renderList(){
-    slideList.innerHTML = "";
-    for(var i=0;i<slides.length;i++){
-      (function(idx){
-        var s = slides[idx];
-        var card = document.createElement("div");
-        card.className = "card" + (idx===selected ? " selected" : "");
-
-        card.addEventListener("click", function(){
-          selected = idx; render();
-        });
-
-        var thumb = document.createElement("div");
-        thumb.className = "thumb";
-        if(s.img){
-          var im = document.createElement("img");
-          im.src = s.img;
-          thumb.appendChild(im);
-        } else thumb.textContent = "16:9";
-
-        var meta = document.createElement("div");
-        meta.className = "meta";
-        var b = document.createElement("b");
-        b.textContent = s.title || ("Slide " + (idx+1));
-        var sp = document.createElement("span");
-        sp.textContent = slideSummary(s);
-        meta.appendChild(b);
-        meta.appendChild(sp);
-
-        card.appendChild(thumb);
-        card.appendChild(meta);
-
-        slideList.appendChild(card);
-      })(i);
-    }
-    countLbl.textContent = String(slides.length);
-  }
-
-  // --- PREVIEW ---
-  function renderPreview(){
-    var s = slides[selected];
-    pvTitle.textContent = s.title || "";
-    pvText.textContent = s.text || "";
-    if(s.img){
-      pvImgWrap.style.display = "block";
-      pvImg.src = s.img;
-    } else {
-      pvImgWrap.style.display = "none";
-      pvImg.src = "";
-    }
-    pill.textContent = "Slide " + (selected+1) + " / " + slides.length;
-  }
-
-  function render(){
-    selected = clamp(selected,0,slides.length-1);
-    renderList();
-    renderPreview();
-
-    var s = slides[selected];
-    titleInput.value = s.title || "";
-    textInput.value  = s.text || "";
-    imgInput.value = "";
-    selLbl.textContent = "#" + (selected+1);
-  }
-
-  // --- Editor bindings ---
-  titleInput.addEventListener("input", function(){
-    slides[selected].title = titleInput.value;
-    save(); renderList(); renderPreview();
-  });
-  textInput.addEventListener("input", function(){
-    slides[selected].text = textInput.value;
-    save(); renderList(); renderPreview();
-  });
-  imgInput.addEventListener("change", function(){
-    var f = imgInput.files && imgInput.files[0];
-    if(!f) return;
-    fileToDataURL(f).then(function(url){
-      slides[selected].img = url;
-      save(); renderList(); renderPreview();
-    });
-  });
-
-  // --- Actions ---
-  addSlideBtn.addEventListener("click", function(){
-    slides.push({ title:"Nouvelle slide", text:"", img:null });
-    selected = slides.length - 1;
-    save(); render();
-  });
-
-  dupBtn.addEventListener("click", function(){
-    var s = slides[selected];
-    slides.splice(selected+1, 0, { title:(s.title||"") + " (copie)", text:s.text, img:s.img });
-    selected = selected + 1;
-    save(); render();
-  });
-
-  delBtn.addEventListener("click", function(){
-    if(slides.length<=1) return;
-    slides.splice(selected, 1);
-    selected = clamp(selected,0,slides.length-1);
-    save(); render();
-  });
-
-  resetBtn.addEventListener("click", function(){
-    localStorage.removeItem("slidemaker_fix_v1");
-    slides = clone(defaultSlides);
-    selected = 0;
-    render();
-  });
-
-  // --- PRESENTATION ---
-  var present = document.getElementById("present");
-  var pCanvas = document.getElementById("pCanvas");
-  var pCtx = pCanvas.getContext("2d");
-  var pIdx = document.getElementById("pIdx");
-  var pTotal = document.getElementById("pTotal");
-
-  var pActive = false;
-  var pSel = 0;
-
-  function rr(ctx,x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-
-  function wrap(ctx,text,x,y,maxW,lineH){
-    var lines = (text||"").split("\n");
-    var yy = y;
-    for(var li=0; li<lines.length; li++){
-      var words = lines[li].split(" ");
-      var line = "";
-      for(var wi=0; wi<words.length; wi++){
-        var test = line ? (line + " " + words[wi]) : words[wi];
-        if(ctx.measureText(test).width > maxW){
-          ctx.fillText(line, x, yy);
-          line = words[wi];
-          yy += lineH;
-        } else line = test;
+    const THEMES = {
+      ocean: {
+        vars: { "--bg1":"#0b1630","--bg2":"#122a55","--accent":"#4aa3ff" },
+        slideBg: "linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
+        frameBg: "linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10))"
+      },
+      midnight: {
+        vars: { "--bg1":"#070b12","--bg2":"#0d1222","--accent":"#7c9cff" },
+        slideBg: "linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02))",
+        frameBg: "linear-gradient(180deg, rgba(0,0,0,.32), rgba(0,0,0,.16))"
+      },
+      sunset: {
+        vars: { "--bg1":"#1a0b2d","--bg2":"#0c1b33","--accent":"#ff6bd6" },
+        slideBg: "linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
+        frameBg: "linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10))"
+      },
+      paper: {
+        vars: {
+          "--bg1":"#eef2ff","--bg2":"#dbeafe",
+          "--text":"rgba(10,18,30,.92)","--muted":"rgba(10,18,30,.62)",
+          "--stroke":"rgba(10,18,30,.12)","--stroke2":"rgba(10,18,30,.22)",
+          "--accent":"#2563eb"
+        },
+        slideBg: "linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.01))",
+        frameBg: "linear-gradient(180deg, rgba(0,0,0,.07), rgba(0,0,0,.02))"
       }
-      if(line){ ctx.fillText(line, x, yy); yy += lineH; }
-      yy += 8;
+    };
+
+    const uid = () => Math.random().toString(36).slice(2,10) + "-" + Date.now().toString(36);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+    let state = {
+      theme: "ocean",
+      transition: "fade",
+      activeSlideId: null,
+      slides: []
+    };
+
+    let selectedId = null;
+    let drag = null; // {type:'move'|'resize', id, startX,startY, orig}
+    let isPresenting = false;
+    let presentIndex = 0;
+
+    /* ---------- SCALE HELPERS ---------- */
+    function editorScale(){
+      // stage is always 16:9, so scale by width
+      return stage.clientWidth / BASE_W;
     }
-  }
+    function presentScale(){
+      return presentStage.clientWidth / BASE_W;
+    }
+    function clientToBaseInStage(clientX, clientY, domStage){
+      const rect = domStage.getBoundingClientRect();
+      const sx = domStage.clientWidth / BASE_W;
+      const x = (clientX - rect.left) / sx;
+      const y = (clientY - rect.top) / sx; // same scale because 16:9
+      return { x, y, s: sx };
+    }
 
-  function drawSlide(){
-    var s = slides[pSel];
-    pIdx.textContent = String(pSel+1);
-    pTotal.textContent = String(slides.length);
+    /* ---------- THEME ---------- */
+    function applyTheme(name){
+      const t = THEMES[name] || THEMES.ocean;
+      state.theme = name;
+      Object.entries(t.vars || {}).forEach(([k,v]) => document.documentElement.style.setProperty(k,v));
+      stage.style.background = t.slideBg;
+      document.querySelector(".stageFrame").style.background = t.frameBg;
+      document.querySelector(".presentFrame").style.background = t.frameBg;
+      presentStage.style.background = t.slideBg;
+      dirty();
+    }
 
-    var W = pCanvas.width, H = pCanvas.height;
-    pCtx.clearRect(0,0,W,H);
+    /* ---------- STORAGE ---------- */
+    function saveToLS(){
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      saveDot.style.display = "inline-block";
+      saveText.textContent = "Sauvegardé";
+      setTimeout(() => { saveDot.style.display = "none"; }, 900);
+    }
+    function loadFromLS(){
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return;
+      try{
+        const data = JSON.parse(raw);
+        if(data && Array.isArray(data.slides)) state = data;
+      }catch(_){}
+    }
+    let dirtyTimer = null;
+    function dirty(){
+      saveText.textContent = "Non sauvegardé";
+      saveDot.style.display = "none";
+      clearTimeout(dirtyTimer);
+      dirtyTimer = setTimeout(() => saveToLS(), 450);
+    }
 
-    var g = pCtx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, "#11183a");
-    g.addColorStop(1, "#070914");
-    pCtx.fillStyle = g;
-    pCtx.fillRect(0,0,W,H);
+    /* ---------- SLIDES ---------- */
+    function ensureDefault(){
+      if(state.slides.length === 0){
+        const s1 = { id: uid(), name:"Slide 1", elements: [] };
+        const s2 = { id: uid(), name:"Slide 2", elements: [] };
+        state.slides.push(s1, s2);
+        state.activeSlideId = s1.id;
+      }
+      if(!state.activeSlideId && state.slides[0]) state.activeSlideId = state.slides[0].id;
+    }
+    function getActiveSlide(){
+      return state.slides.find(s => s.id === state.activeSlideId) || null;
+    }
+    function renderSlidesList(){
+      slidesList.innerHTML = "";
+      state.slides.forEach((s, idx) => {
+        const item = document.createElement("div");
+        item.className = "slideItem" + (s.id === state.activeSlideId ? " active" : "");
+        item.innerHTML = `
+          <div>
+            <div class="name">Slide ${idx+1}</div>
+            <div class="meta">${s.elements.length} objet(s)</div>
+          </div>
+          <div class="meta">▶</div>
+        `;
+        item.addEventListener("click", () => {
+          state.activeSlideId = s.id;
+          selectedId = null;
+          renderAll();
+          dirty();
+        });
+        slidesList.appendChild(item);
+      });
+    }
 
-    var margin = 60;
-    var maxW = W - margin*2;
-    var maxH = H - margin*2;
-    var ar = 16/9;
+    /* ---------- ELEMENT RENDER (EDITOR) ---------- */
+    function elToDom(el, scale){
+      const wrap = document.createElement("div");
+      wrap.className = "el " + el.type + (el.id === selectedId ? " selected" : "");
+      wrap.dataset.id = el.id;
 
-    var w = maxW;
-    var h = w/ar;
-    if(h > maxH){ h = maxH; w = h*ar; }
+      // SCALE FROM BASE -> VIEW
+      wrap.style.left = (el.x * scale) + "px";
+      wrap.style.top  = (el.y * scale) + "px";
+      wrap.style.width  = (el.w * scale) + "px";
+      wrap.style.height = (el.h * scale) + "px";
+      wrap.style.zIndex = String(el.z || 1);
 
-    var x = (W - w)/2;
-    var y = (H - h)/2;
+      const inner = document.createElement("div");
+      inner.className = "inner";
 
-    pCtx.fillStyle = "rgba(255,255,255,0.06)";
-    rr(pCtx, x, y, w, h, 22);
-    pCtx.fill();
+      if(el.type === "text"){
+        inner.textContent = el.text || "Texte";
+        inner.style.fontSize = ((el.fontSize || 48) * scale) + "px";
+        inner.style.color = el.color || "rgba(255,255,255,.92)";
+      } else {
+        const img = document.createElement("img");
+        img.src = el.src || "";
+        img.alt = "";
+        inner.appendChild(img);
+      }
 
-    pCtx.fillStyle = "rgba(233,236,255,0.96)";
-    pCtx.font = "700 54px system-ui, Arial";
-    wrap(pCtx, s.title || "", x+46, y+86, w-92, 60);
+      const handle = document.createElement("div");
+      handle.className = "handle";
 
-    pCtx.fillStyle = "rgba(233,236,255,0.75)";
-    pCtx.font = "400 26px system-ui, Arial";
-    wrap(pCtx, s.text || "", x+46, y+170, w-92, 34);
+      wrap.appendChild(inner);
+      wrap.appendChild(handle);
 
-    pCtx.fillStyle = "rgba(255,255,255,0.35)";
-    pCtx.font = "500 18px system-ui, Arial";
-    pCtx.fillText("Slide " + (pSel+1) + "/" + slides.length, x+46, y+h-24);
+      wrap.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+        selectedId = el.id;
 
-    if(s.img){
-      var img = new Image();
-      img.onload = function(){
-        var iw = Math.min(420, w*0.34);
-        var ih = iw*(9/16);
-        var ix = x + w - iw - 46;
-        var iy = y + h - ih - 46;
+        const { x:bx, y:by, s } = clientToBaseInStage(e.clientX, e.clientY, stage);
 
-        pCtx.save();
-        rr(pCtx, ix, iy, iw, ih, 16);
-        pCtx.clip();
-        pCtx.drawImage(img, ix, iy, iw, ih);
-        pCtx.restore();
+        const sld = getActiveSlide();
+        const target = sld.elements.find(x => x.id === el.id);
+        if(!target) return;
+
+        drag = {
+          type: (e.target === handle) ? "resize" : "move",
+          id: el.id,
+          startX: bx,
+          startY: by,
+          scale: s,
+          orig: { x: target.x, y: target.y, w: target.w, h: target.h }
+        };
+
+        stage.setPointerCapture(e.pointerId);
+        renderStage();
+      });
+
+      return wrap;
+    }
+
+    function renderStage(){
+      const sld = getActiveSlide();
+      stage.innerHTML = "";
+      if(!sld) return;
+
+      const scale = editorScale();
+
+      // clamp in BASE coords
+      for(const el of sld.elements){
+        el.w = clamp(el.w, 40, 4000);
+        el.h = clamp(el.h, 30, 4000);
+        el.x = clamp(el.x, -2000, BASE_W - 10);
+        el.y = clamp(el.y, -2000, BASE_H - 10);
+      }
+
+      const els = [...sld.elements].sort((a,b) => (a.z||1) - (b.z||1));
+      for(const el of els) stage.appendChild(elToDom(el, scale));
+    }
+
+    function renderAll(){
+      renderSlidesList();
+      themeSelect.value = state.theme || "ocean";
+      transitionSelect.value = state.transition || "fade";
+      applyTheme(state.theme || "ocean");
+      renderStage();
+    }
+
+    /* ---------- MOVE / RESIZE (EDITOR) ---------- */
+    stage.addEventListener("pointerdown", () => { selectedId = null; renderStage(); });
+
+    stage.addEventListener("pointermove", (e) => {
+      if(!drag) return;
+
+      const { x:bx, y:by } = clientToBaseInStage(e.clientX, e.clientY, stage);
+
+      const sld = getActiveSlide();
+      const el = sld.elements.find(x => x.id === drag.id);
+      if(!el) return;
+
+      const dx = bx - drag.startX;
+      const dy = by - drag.startY;
+
+      if(drag.type === "move"){
+        el.x = drag.orig.x + dx;
+        el.y = drag.orig.y + dy;
+      } else {
+        el.w = clamp(drag.orig.w + dx, 40, 4000);
+        el.h = clamp(drag.orig.h + dy, 30, 4000);
+      }
+
+      renderStage();
+      dirty();
+    });
+
+    stage.addEventListener("pointerup", () => { drag = null; });
+    stage.addEventListener("pointercancel", () => { drag = null; });
+
+    /* ---------- ELEMENT OPS ---------- */
+    function bringToFront(id){
+      const sld = getActiveSlide();
+      const maxZ = sld.elements.reduce((m,e)=>Math.max(m, e.z||1), 1);
+      const el = sld.elements.find(e=>e.id===id);
+      if(el) el.z = maxZ + 1;
+    }
+
+    function addText(){
+      const sld = getActiveSlide();
+      const el = {
+        id: uid(),
+        type: "text",
+        text: "Texte",
+        x: 60, y: 60,        // BASE coords
+        w: 320, h: 120,      // BASE sizes
+        z: 1,
+        fontSize: 48,
+        color: "rgba(255,255,255,.92)"
       };
-      img.src = s.img;
+      sld.elements.push(el);
+      selectedId = el.id;
+      bringToFront(el.id);
+      renderAll();
+      dirty();
     }
-  }
 
-  function resizePresentation(){
-    pCanvas.width = window.innerWidth;
-    pCanvas.height = window.innerHeight;
-    drawSlide();
-  }
-
-  function enterPresentation(){
-    pActive = true;
-    pSel = selected;
-    present.classList.add("show");
-    resizePresentation();
-
-    // tente fullscreen (si autorisé)
-    try{
-      if(present.requestFullscreen) present.requestFullscreen();
-    }catch(e){}
-  }
-
-  function exitPresentation(){
-    pActive = false;
-    present.classList.remove("show");
-    try{
-      if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
-    }catch(e){}
-  }
-
-  presentBtn.addEventListener("click", function(){
-    enterPresentation();
-  });
-
-  window.addEventListener("keydown", function(e){
-    if(!pActive) return;
-    if(e.code === "Escape"){ exitPresentation(); return; }
-    if(e.code === "ArrowRight" || e.code === "KeyD"){
-      pSel = clamp(pSel+1, 0, slides.length-1);
-      drawSlide();
+    function addImageFromDataUrl(dataUrl){
+      const sld = getActiveSlide();
+      const el = {
+        id: uid(),
+        type: "image",
+        src: dataUrl,
+        x: 120, y: 80,
+        w: 360, h: 240,
+        z: 1
+      };
+      sld.elements.push(el);
+      selectedId = el.id;
+      bringToFront(el.id);
+      renderAll();
+      dirty();
     }
-    if(e.code === "ArrowLeft" || e.code === "KeyA"){
-      pSel = clamp(pSel-1, 0, slides.length-1);
-      drawSlide();
+
+    function fileToDataURL(file){
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result || ""));
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
     }
-  });
 
-  window.addEventListener("resize", function(){
-    if(pActive) resizePresentation();
-  });
+    /* ---------- KEYS ---------- */
+    window.addEventListener("keydown", (e) => {
+      if(isPresenting) return;
 
-  // --- EXPORT minimal (juste pour éviter de casser) ---
-  function exportHTML(){
-    alert("Export: je peux l’ajouter ensuite, là on a FIX les slides + présentation.");
-  }
-  exportBtn.addEventListener("click", exportHTML);
+      if((e.key === "Delete" || e.key === "Backspace") && selectedId){
+        const sld = getActiveSlide();
+        const idx = sld.elements.findIndex(x => x.id === selectedId);
+        if(idx >= 0){
+          sld.elements.splice(idx, 1);
+          selectedId = null;
+          renderAll();
+          dirty();
+        }
+      }
+    });
 
-  // Init
-  render();
+    document.getElementById("textPlus").addEventListener("click", () => {
+      const sld = getActiveSlide();
+      if(!selectedId) return;
+      const el = sld.elements.find(e => e.id === selectedId);
+      if(!el || el.type !== "text") return;
+      el.fontSize = Math.min((el.fontSize || 48) + 4, 200);
+      renderStage();
+      dirty();
+    });
 
-  // Petit test pour confirmer que les boutons marchent
-  // (tu peux laisser)
-  dbg("OK: JS chargé. Si tu vois ce message, les boutons doivent fonctionner.");
-})();
-</script>
+    document.getElementById("textMinus").addEventListener("click", () => {
+      const sld = getActiveSlide();
+      if(!selectedId) return;
+      const el = sld.elements.find(e => e.id === selectedId);
+      if(!el || el.type !== "text") return;
+      el.fontSize = Math.max((el.fontSize || 48) - 4, 10);
+      renderStage();
+      dirty();
+    });
 
+    /* ---------- UI BUTTONS ---------- */
+    document.getElementById("addText").addEventListener("click", addText);
+
+    document.getElementById("addImg").addEventListener("click", () => {
+      imgPicker.value = "";
+      imgPicker.click();
+    });
+
+    imgPicker.addEventListener("change", async () => {
+      const f = imgPicker.files && imgPicker.files[0];
+      if(!f) return;
+      const dataUrl = await fileToDataURL(f);
+      addImageFromDataUrl(dataUrl);
+    });
+
+    document.getElementById("btnAddSlide").addEventListener("click", () => {
+      const n = state.slides.length + 1;
+      const s = { id: uid(), name:"Slide " + n, elements: [] };
+      state.slides.push(s);
+      state.activeSlideId = s.id;
+      selectedId = null;
+      renderAll();
+      dirty();
+    });
+
+    document.getElementById("btnDupSlide").addEventListener("click", () => {
+      const sld = getActiveSlide();
+      const copy = JSON.parse(JSON.stringify(sld));
+      copy.id = uid();
+      copy.name = (sld.name || "Slide") + " (copie)";
+      copy.elements.forEach(el => el.id = uid());
+      state.slides.push(copy);
+      state.activeSlideId = copy.id;
+      selectedId = null;
+      renderAll();
+      dirty();
+    });
+
+    document.getElementById("btnDelSlide").addEventListener("click", () => {
+      if(state.slides.length <= 1) return;
+      const idx = state.slides.findIndex(s => s.id === state.activeSlideId);
+      if(idx >= 0){
+        state.slides.splice(idx, 1);
+        const next = state.slides[Math.max(0, idx-1)];
+        state.activeSlideId = next.id;
+        selectedId = null;
+        renderAll();
+        dirty();
+      }
+    });
+
+    document.getElementById("btnSave").addEventListener("click", () => saveToLS());
+
+    themeSelect.addEventListener("change", () => {
+      applyTheme(themeSelect.value);
+      renderAll();
+      dirty();
+    });
+
+    transitionSelect.addEventListener("change", () => {
+      state.transition = transitionSelect.value;
+      dirty();
+    });
+
+    /* ---------- PRESENTATION (SCALED from BASE) ---------- */
+    function renderPresentSlide(){
+      presentStage.innerHTML = "";
+      const sld = state.slides[presentIndex];
+      if(!sld) return;
+
+      hudCounter.textContent = (presentIndex+1) + "/" + state.slides.length;
+
+      const scale = presentScale();
+
+      const wrap = document.createElement("div");
+      wrap.style.position = "absolute";
+      wrap.style.inset = "0";
+
+      const t = state.transition || "fade";
+      if(t !== "none") wrap.className = "t-" + t;
+
+      const els = [...sld.elements].sort((a,b) => (a.z||1) - (b.z||1));
+      for(const el of els){
+        const w = document.createElement("div");
+        w.className = "pEl";
+        w.style.left = (el.x * scale) + "px";
+        w.style.top  = (el.y * scale) + "px";
+        w.style.width  = (el.w * scale) + "px";
+        w.style.height = (el.h * scale) + "px";
+        w.style.zIndex = String(el.z || 1);
+
+        if(el.type === "text"){
+          const tdiv = document.createElement("div");
+          tdiv.className = "pText";
+          tdiv.style.fontSize = ((el.fontSize || 48) * scale) + "px";
+          tdiv.style.color = el.color || "rgba(255,255,255,.92)";
+          tdiv.textContent = el.text || "";
+          w.appendChild(tdiv);
+        } else {
+          const img = document.createElement("img");
+          img.src = el.src || "";
+          img.alt = "";
+          const box = document.createElement("div");
+          box.className = "pImg";
+          box.style.width = "100%";
+          box.style.height = "100%";
+          box.appendChild(img);
+          w.appendChild(box);
+        }
+
+        wrap.appendChild(w);
+      }
+
+      presentStage.appendChild(wrap);
+    }
+
+    function enterPresent(){
+      isPresenting = true;
+      const idx = state.slides.findIndex(s => s.id === state.activeSlideId);
+      presentIndex = idx >= 0 ? idx : 0;
+
+      presentOverlay.classList.add("on");
+      renderPresentSlide();
+
+      try { presentOverlay.requestFullscreen?.(); } catch(_){}
+    }
+
+    function exitPresent(){
+      isPresenting = false;
+      presentOverlay.classList.remove("on");
+      const sld = state.slides[presentIndex];
+      if(sld) state.activeSlideId = sld.id;
+      selectedId = null;
+      renderAll();
+      try { document.exitFullscreen?.(); } catch(_){}
+    }
+
+    function nextPresent(){
+      if(presentIndex >= state.slides.length - 1){
+        exitPresent(); // dernier clic => retour éditeur
+        return;
+      }
+      presentIndex++;
+      renderPresentSlide();
+    }
+    function prevPresent(){
+      presentIndex = Math.max(0, presentIndex - 1);
+      renderPresentSlide();
+    }
+
+    document.getElementById("btnPresent").addEventListener("click", enterPresent);
+    btnExitPresent.addEventListener("click", (e) => { e.stopPropagation(); exitPresent(); });
+    presentStage.addEventListener("click", () => nextPresent());
+
+    window.addEventListener("keydown", (e) => {
+      if(!isPresenting) return;
+      if(e.key === "Escape") exitPresent();
+      if(e.key === "ArrowRight" || e.key === " ") nextPresent();
+      if(e.key === "ArrowLeft") prevPresent();
+    });
+
+    /* ---------- INIT ---------- */
+    loadFromLS();
+    ensureDefault();
+    themeSelect.value = state.theme || "ocean";
+    transitionSelect.value = state.transition || "fade";
+    applyTheme(state.theme || "ocean");
+    renderAll();
+
+    // keep stable when resizing window
+    window.addEventListener("resize", () => {
+      renderStage();
+      if(isPresenting) renderPresentSlide();
+    });
+
+    window.addEventListener("beforeunload", () => saveToLS());
+  })();
+  </script>
 </body>
 </html>
