@@ -185,13 +185,19 @@
     .el{ position:absolute; border-radius:12px; overflow:visible; }
     .el.selected{ outline:2px solid rgba(74,163,255,.85); outline-offset:2px; }
     .el .inner{ width:100%; height:100%; border-radius:12px; overflow:hidden; }
+
+    /* Text is editable now */
     .el.text .inner{
       padding:10px 12px;
       background: rgba(0,0,0,.20);
       border:1px solid rgba(255,255,255,.12);
       color:var(--text);
       white-space:pre-wrap; word-break:break-word; line-height:1.15;
+      outline:none;
+      cursor:text;
+      user-select:text;
     }
+
     .el.image .inner{
       background: rgba(0,0,0,.12);
       border:1px solid rgba(255,255,255,.12);
@@ -220,17 +226,17 @@
         linear-gradient(180deg, var(--bg1), var(--bg2));
       display:none;
       z-index:9999;
-      padding:12px; /* smaller padding => bigger stage */
+      padding:12px;
     }
     .present.on{ display:grid; place-items:center; }
     .presentFrame{
-      width:min(1400px, 98vw); /* bigger */
+      width:min(1400px, 98vw);
       aspect-ratio: 16 / 9;
       border-radius: 22px;
       border:1px solid rgba(255,255,255,.18);
       background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10));
       box-shadow: 0 22px 60px rgba(0,0,0,.55);
-      padding:14px; /* smaller */
+      padding:14px;
       position:relative;
       overflow:hidden;
     }
@@ -245,7 +251,7 @@
       user-select:none;
     }
 
-    /* Presentation elements (no ugly boxes) */
+    /* Presentation elements (no boxes) */
     .pEl{ position:absolute; border-radius:12px; overflow:hidden; }
     .pText{
       width:100%; height:100%;
@@ -342,6 +348,7 @@
         • Clique un objet pour le sélectionner<br>
         • Glisse pour déplacer<br>
         • Tire le petit carré pour redimensionner<br>
+        • <b>Double-clic</b> sur un texte pour l’éditer<br>
         • <b>Suppr</b> supprime l’objet sélectionné
       </div>
     </aside>
@@ -381,16 +388,9 @@
 
   <script>
   (() => {
-    /* =========================================================
-       IMPORTANT FIX:
-       On stocke TOUTES les coordonnées dans un repère FIXE 960x540
-       Puis on "scale" dans l'éditeur ET en présentation.
-       => plus aucun décalage.
-       ========================================================= */
     const BASE_W = 960;
     const BASE_H = 540;
-
-    const LS_KEY = "slidemaker_v4_fixedCoords";
+    const LS_KEY = "slidemaker_v4_fixedCoords_editText";
 
     const stage = document.getElementById("stage");
     const slidesList = document.getElementById("slidesList");
@@ -408,65 +408,44 @@
     const imgPicker = document.getElementById("imgPicker");
 
     const THEMES = {
-      ocean: {
-        vars: { "--bg1":"#0b1630","--bg2":"#122a55","--accent":"#4aa3ff" },
-        slideBg: "linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
-        frameBg: "linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10))"
-      },
-      midnight: {
-        vars: { "--bg1":"#070b12","--bg2":"#0d1222","--accent":"#7c9cff" },
-        slideBg: "linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02))",
-        frameBg: "linear-gradient(180deg, rgba(0,0,0,.32), rgba(0,0,0,.16))"
-      },
-      sunset: {
-        vars: { "--bg1":"#1a0b2d","--bg2":"#0c1b33","--accent":"#ff6bd6" },
-        slideBg: "linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
-        frameBg: "linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10))"
-      },
-      paper: {
-        vars: {
+      ocean: { vars:{ "--bg1":"#0b1630","--bg2":"#122a55","--accent":"#4aa3ff" },
+        slideBg:"linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
+        frameBg:"linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10))" },
+      midnight: { vars:{ "--bg1":"#070b12","--bg2":"#0d1222","--accent":"#7c9cff" },
+        slideBg:"linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02))",
+        frameBg:"linear-gradient(180deg, rgba(0,0,0,.32), rgba(0,0,0,.16))" },
+      sunset: { vars:{ "--bg1":"#1a0b2d","--bg2":"#0c1b33","--accent":"#ff6bd6" },
+        slideBg:"linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
+        frameBg:"linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.10))" },
+      paper: { vars:{
           "--bg1":"#eef2ff","--bg2":"#dbeafe",
           "--text":"rgba(10,18,30,.92)","--muted":"rgba(10,18,30,.62)",
           "--stroke":"rgba(10,18,30,.12)","--stroke2":"rgba(10,18,30,.22)",
           "--accent":"#2563eb"
         },
-        slideBg: "linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.01))",
-        frameBg: "linear-gradient(180deg, rgba(0,0,0,.07), rgba(0,0,0,.02))"
-      }
+        slideBg:"linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.01))",
+        frameBg:"linear-gradient(180deg, rgba(0,0,0,.07), rgba(0,0,0,.02))" }
     };
 
     const uid = () => Math.random().toString(36).slice(2,10) + "-" + Date.now().toString(36);
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-    let state = {
-      theme: "ocean",
-      transition: "fade",
-      activeSlideId: null,
-      slides: []
-    };
+    let state = { theme:"ocean", transition:"fade", activeSlideId:null, slides:[] };
 
     let selectedId = null;
-    let drag = null; // {type:'move'|'resize', id, startX,startY, orig}
+    let drag = null;
     let isPresenting = false;
     let presentIndex = 0;
+    let editingTextId = null;
 
-    /* ---------- SCALE HELPERS ---------- */
-    function editorScale(){
-      // stage is always 16:9, so scale by width
-      return stage.clientWidth / BASE_W;
-    }
-    function presentScale(){
-      return presentStage.clientWidth / BASE_W;
-    }
-    function clientToBaseInStage(clientX, clientY, domStage){
+    function editorScale(){ return stage.clientWidth / BASE_W; }
+    function presentScale(){ return presentStage.clientWidth / BASE_W; }
+    function clientToBase(clientX, clientY, domStage){
       const rect = domStage.getBoundingClientRect();
-      const sx = domStage.clientWidth / BASE_W;
-      const x = (clientX - rect.left) / sx;
-      const y = (clientY - rect.top) / sx; // same scale because 16:9
-      return { x, y, s: sx };
+      const s = domStage.clientWidth / BASE_W;
+      return { x:(clientX - rect.left)/s, y:(clientY - rect.top)/s, s };
     }
 
-    /* ---------- THEME ---------- */
     function applyTheme(name){
       const t = THEMES[name] || THEMES.ocean;
       state.theme = name;
@@ -478,22 +457,21 @@
       dirty();
     }
 
-    /* ---------- STORAGE ---------- */
     function saveToLS(){
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      localStorage.setItem("slidemaker_v4_fixedCoords", JSON.stringify(state));
       saveDot.style.display = "inline-block";
       saveText.textContent = "Sauvegardé";
       setTimeout(() => { saveDot.style.display = "none"; }, 900);
     }
     function loadFromLS(){
-      const raw = localStorage.getItem(LS_KEY);
+      const raw = localStorage.getItem("slidemaker_v4_fixedCoords");
       if(!raw) return;
       try{
         const data = JSON.parse(raw);
         if(data && Array.isArray(data.slides)) state = data;
       }catch(_){}
     }
-    let dirtyTimer = null;
+    let dirtyTimer=null;
     function dirty(){
       saveText.textContent = "Non sauvegardé";
       saveDot.style.display = "none";
@@ -501,7 +479,6 @@
       dirtyTimer = setTimeout(() => saveToLS(), 450);
     }
 
-    /* ---------- SLIDES ---------- */
     function ensureDefault(){
       if(state.slides.length === 0){
         const s1 = { id: uid(), name:"Slide 1", elements: [] };
@@ -511,9 +488,8 @@
       }
       if(!state.activeSlideId && state.slides[0]) state.activeSlideId = state.slides[0].id;
     }
-    function getActiveSlide(){
-      return state.slides.find(s => s.id === state.activeSlideId) || null;
-    }
+    function getActiveSlide(){ return state.slides.find(s => s.id === state.activeSlideId) || null; }
+
     function renderSlidesList(){
       slidesList.innerHTML = "";
       state.slides.forEach((s, idx) => {
@@ -529,6 +505,7 @@
         item.addEventListener("click", () => {
           state.activeSlideId = s.id;
           selectedId = null;
+          editingTextId = null;
           renderAll();
           dirty();
         });
@@ -536,13 +513,12 @@
       });
     }
 
-    /* ---------- ELEMENT RENDER (EDITOR) ---------- */
+    function getEl(slide, id){ return slide.elements.find(e => e.id === id); }
+
     function elToDom(el, scale){
       const wrap = document.createElement("div");
       wrap.className = "el " + el.type + (el.id === selectedId ? " selected" : "");
       wrap.dataset.id = el.id;
-
-      // SCALE FROM BASE -> VIEW
       wrap.style.left = (el.x * scale) + "px";
       wrap.style.top  = (el.y * scale) + "px";
       wrap.style.width  = (el.w * scale) + "px";
@@ -553,9 +529,59 @@
       inner.className = "inner";
 
       if(el.type === "text"){
-        inner.textContent = el.text || "Texte";
         inner.style.fontSize = ((el.fontSize || 48) * scale) + "px";
         inner.style.color = el.color || "rgba(255,255,255,.92)";
+
+        // EDIT MODE ONLY IF editingTextId === el.id
+        if(editingTextId === el.id){
+          inner.contentEditable = "true";
+          inner.spellcheck = false;
+          inner.textContent = el.text ?? "";
+          inner.focus();
+
+          // place cursor end
+          requestAnimationFrame(() => {
+            try{
+              const range = document.createRange();
+              range.selectNodeContents(inner);
+              range.collapse(false);
+              const sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }catch(_){}
+          });
+
+          inner.addEventListener("input", () => {
+            el.text = inner.textContent;
+            dirty();
+          });
+
+          inner.addEventListener("keydown", (ev) => {
+            if(ev.key === "Escape"){
+              editingTextId = null;
+              ev.preventDefault();
+              renderStage();
+            }
+          });
+
+          inner.addEventListener("blur", () => {
+            editingTextId = null;
+            renderStage();
+            dirty();
+          });
+        } else {
+          inner.contentEditable = "false";
+          inner.textContent = el.text || "Texte";
+        }
+
+        // double click => edit
+        wrap.addEventListener("dblclick", (e) => {
+          e.stopPropagation();
+          selectedId = el.id;
+          editingTextId = el.id;
+          renderStage();
+        });
+
       } else {
         const img = document.createElement("img");
         img.src = el.src || "";
@@ -569,22 +595,25 @@
       wrap.appendChild(inner);
       wrap.appendChild(handle);
 
+      // pointerdown for select/move/resize, but DO NOT move while editing
       wrap.addEventListener("pointerdown", (e) => {
         e.stopPropagation();
+
+        // if text and currently editing this text -> allow typing selection, don't start drag
+        if(el.type === "text" && editingTextId === el.id) return;
+
         selectedId = el.id;
 
-        const { x:bx, y:by, s } = clientToBaseInStage(e.clientX, e.clientY, stage);
-
         const sld = getActiveSlide();
-        const target = sld.elements.find(x => x.id === el.id);
+        const target = getEl(sld, el.id);
         if(!target) return;
+
+        const { x:bx, y:by } = clientToBase(e.clientX, e.clientY, stage);
 
         drag = {
           type: (e.target === handle) ? "resize" : "move",
           id: el.id,
-          startX: bx,
-          startY: by,
-          scale: s,
+          startX: bx, startY: by,
           orig: { x: target.x, y: target.y, w: target.w, h: target.h }
         };
 
@@ -601,17 +630,14 @@
       if(!sld) return;
 
       const scale = editorScale();
-
-      // clamp in BASE coords
-      for(const el of sld.elements){
+      const els = [...sld.elements].sort((a,b) => (a.z||1) - (b.z||1));
+      for(const el of els){
         el.w = clamp(el.w, 40, 4000);
         el.h = clamp(el.h, 30, 4000);
         el.x = clamp(el.x, -2000, BASE_W - 10);
         el.y = clamp(el.y, -2000, BASE_H - 10);
+        stage.appendChild(elToDom(el, scale));
       }
-
-      const els = [...sld.elements].sort((a,b) => (a.z||1) - (b.z||1));
-      for(const el of els) stage.appendChild(elToDom(el, scale));
     }
 
     function renderAll(){
@@ -622,41 +648,10 @@
       renderStage();
     }
 
-    /* ---------- MOVE / RESIZE (EDITOR) ---------- */
-    stage.addEventListener("pointerdown", () => { selectedId = null; renderStage(); });
-
-    stage.addEventListener("pointermove", (e) => {
-      if(!drag) return;
-
-      const { x:bx, y:by } = clientToBaseInStage(e.clientX, e.clientY, stage);
-
-      const sld = getActiveSlide();
-      const el = sld.elements.find(x => x.id === drag.id);
-      if(!el) return;
-
-      const dx = bx - drag.startX;
-      const dy = by - drag.startY;
-
-      if(drag.type === "move"){
-        el.x = drag.orig.x + dx;
-        el.y = drag.orig.y + dy;
-      } else {
-        el.w = clamp(drag.orig.w + dx, 40, 4000);
-        el.h = clamp(drag.orig.h + dy, 30, 4000);
-      }
-
-      renderStage();
-      dirty();
-    });
-
-    stage.addEventListener("pointerup", () => { drag = null; });
-    stage.addEventListener("pointercancel", () => { drag = null; });
-
-    /* ---------- ELEMENT OPS ---------- */
     function bringToFront(id){
       const sld = getActiveSlide();
       const maxZ = sld.elements.reduce((m,e)=>Math.max(m, e.z||1), 1);
-      const el = sld.elements.find(e=>e.id===id);
+      const el = getEl(sld, id);
       if(el) el.z = maxZ + 1;
     }
 
@@ -666,20 +661,28 @@
         id: uid(),
         type: "text",
         text: "Texte",
-        x: 60, y: 60,        // BASE coords
-        w: 320, h: 120,      // BASE sizes
+        x: 60, y: 60,
+        w: 320, h: 120,
         z: 1,
         fontSize: 48,
         color: "rgba(255,255,255,.92)"
       };
       sld.elements.push(el);
       selectedId = el.id;
+      editingTextId = el.id; // directly edit
       bringToFront(el.id);
-      renderAll();
+      renderStage();
       dirty();
     }
 
-    function addImageFromDataUrl(dataUrl){
+    async function addImageFromFile(file){
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result || ""));
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+
       const sld = getActiveSlide();
       const el = {
         id: uid(),
@@ -691,23 +694,49 @@
       };
       sld.elements.push(el);
       selectedId = el.id;
+      editingTextId = null;
       bringToFront(el.id);
-      renderAll();
+      renderStage();
       dirty();
     }
 
-    function fileToDataURL(file){
-      return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result || ""));
-        r.onerror = reject;
-        r.readAsDataURL(file);
-      });
-    }
+    // stage click = unselect + stop editing
+    stage.addEventListener("pointerdown", () => {
+      editingTextId = null;
+      selectedId = null;
+      renderStage();
+    });
 
-    /* ---------- KEYS ---------- */
+    // move/resize
+    stage.addEventListener("pointermove", (e) => {
+      if(!drag) return;
+      const sld = getActiveSlide();
+      const el = getEl(sld, drag.id);
+      if(!el) return;
+
+      const { x:bx, y:by } = clientToBase(e.clientX, e.clientY, stage);
+      const dx = bx - drag.startX;
+      const dy = by - drag.startY;
+
+      if(drag.type === "move"){
+        el.x = drag.orig.x + dx;
+        el.y = drag.orig.y + dy;
+      } else {
+        el.w = clamp(drag.orig.w + dx, 40, 4000);
+        el.h = clamp(drag.orig.h + dy, 30, 4000);
+      }
+      renderStage();
+      dirty();
+    });
+    stage.addEventListener("pointerup", () => { drag = null; });
+    stage.addEventListener("pointercancel", () => { drag = null; });
+
+    // keys
     window.addEventListener("keydown", (e) => {
       if(isPresenting) return;
+
+      // if editing text, don't delete slide stuff
+      if(editingTextId) return;
 
       if((e.key === "Delete" || e.key === "Backspace") && selectedId){
         const sld = getActiveSlide();
@@ -715,7 +744,7 @@
         if(idx >= 0){
           sld.elements.splice(idx, 1);
           selectedId = null;
-          renderAll();
+          renderStage();
           dirty();
         }
       }
@@ -724,7 +753,7 @@
     document.getElementById("textPlus").addEventListener("click", () => {
       const sld = getActiveSlide();
       if(!selectedId) return;
-      const el = sld.elements.find(e => e.id === selectedId);
+      const el = getEl(sld, selectedId);
       if(!el || el.type !== "text") return;
       el.fontSize = Math.min((el.fontSize || 48) + 4, 200);
       renderStage();
@@ -734,14 +763,14 @@
     document.getElementById("textMinus").addEventListener("click", () => {
       const sld = getActiveSlide();
       if(!selectedId) return;
-      const el = sld.elements.find(e => e.id === selectedId);
+      const el = getEl(sld, selectedId);
       if(!el || el.type !== "text") return;
       el.fontSize = Math.max((el.fontSize || 48) - 4, 10);
       renderStage();
       dirty();
     });
 
-    /* ---------- UI BUTTONS ---------- */
+    // UI buttons
     document.getElementById("addText").addEventListener("click", addText);
 
     document.getElementById("addImg").addEventListener("click", () => {
@@ -752,8 +781,7 @@
     imgPicker.addEventListener("change", async () => {
       const f = imgPicker.files && imgPicker.files[0];
       if(!f) return;
-      const dataUrl = await fileToDataURL(f);
-      addImageFromDataUrl(dataUrl);
+      await addImageFromFile(f);
     });
 
     document.getElementById("btnAddSlide").addEventListener("click", () => {
@@ -762,6 +790,7 @@
       state.slides.push(s);
       state.activeSlideId = s.id;
       selectedId = null;
+      editingTextId = null;
       renderAll();
       dirty();
     });
@@ -775,6 +804,7 @@
       state.slides.push(copy);
       state.activeSlideId = copy.id;
       selectedId = null;
+      editingTextId = null;
       renderAll();
       dirty();
     });
@@ -787,6 +817,7 @@
         const next = state.slides[Math.max(0, idx-1)];
         state.activeSlideId = next.id;
         selectedId = null;
+        editingTextId = null;
         renderAll();
         dirty();
       }
@@ -805,14 +836,13 @@
       dirty();
     });
 
-    /* ---------- PRESENTATION (SCALED from BASE) ---------- */
+    // Presentation (scaled)
     function renderPresentSlide(){
       presentStage.innerHTML = "";
       const sld = state.slides[presentIndex];
       if(!sld) return;
 
       hudCounter.textContent = (presentIndex+1) + "/" + state.slides.length;
-
       const scale = presentScale();
 
       const wrap = document.createElement("div");
@@ -844,16 +874,12 @@
           img.src = el.src || "";
           img.alt = "";
           const box = document.createElement("div");
-          box.className = "pImg";
-          box.style.width = "100%";
-          box.style.height = "100%";
+          box.style.width="100%"; box.style.height="100%";
           box.appendChild(img);
           w.appendChild(box);
         }
-
         wrap.appendChild(w);
       }
-
       presentStage.appendChild(wrap);
     }
 
@@ -864,7 +890,6 @@
 
       presentOverlay.classList.add("on");
       renderPresentSlide();
-
       try { presentOverlay.requestFullscreen?.(); } catch(_){}
     }
 
@@ -874,13 +899,14 @@
       const sld = state.slides[presentIndex];
       if(sld) state.activeSlideId = sld.id;
       selectedId = null;
+      editingTextId = null;
       renderAll();
       try { document.exitFullscreen?.(); } catch(_){}
     }
 
     function nextPresent(){
       if(presentIndex >= state.slides.length - 1){
-        exitPresent(); // dernier clic => retour éditeur
+        exitPresent();
         return;
       }
       presentIndex++;
@@ -902,7 +928,7 @@
       if(e.key === "ArrowLeft") prevPresent();
     });
 
-    /* ---------- INIT ---------- */
+    // init
     loadFromLS();
     ensureDefault();
     themeSelect.value = state.theme || "ocean";
@@ -910,7 +936,6 @@
     applyTheme(state.theme || "ocean");
     renderAll();
 
-    // keep stable when resizing window
     window.addEventListener("resize", () => {
       renderStage();
       if(isPresenting) renderPresentSlide();
